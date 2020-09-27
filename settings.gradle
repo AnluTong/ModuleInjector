@@ -1,0 +1,7 @@
+include ':libraryB'
+include ':libraryA'
+include ':libraryC'
+include ':app'
+rootProject.name = "ModuleInjector"
+
+apply from: 'publish/SettingSetup.gradle'

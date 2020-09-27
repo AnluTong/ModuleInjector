@@ -1,0 +1,211 @@
+includePublic()
+
+def includePublic() {
+    def publicDir = new File(rootDir, ".module/public")
+    if (!publicDir.exists() && !publicDir.mkdirs()) {
+        System.out.println("public dir make error")
+        return
+    }
+    def mainDir = new File(publicDir, "src/main")
+    if (!mainDir.exists() && !mainDir.mkdirs()) {
+        System.out.println("main dir make error")
+        return
+    }
+    def javaDir = new File(mainDir, "java")
+    def mfFile = new File(mainDir, "AndroidManifest.xml")
+    if (!javaDir.exists() && !javaDir.mkdirs()) {
+        System.out.println("main dir make error")
+        return
+    }
+    if (!mfFile.exists()) {
+        mfFile.write('<manifest xmlns:android="http://schemas.android.com/apk/res/android"\n' +
+                '    package="me.andrew.moduleinjector"/>')
+    }
+    def ignoreFile = new File(publicDir, ".gitignore")
+    if (!ignoreFile.exists()) {
+        ignoreFile.write("/build")
+    }
+    def gradleFile = new File(publicDir, "build.gradle")
+    if (!gradleFile.exists()) {
+        gradleFile.write('apply plugin: \'com.android.library\'\n' +
+                '\n' +
+                'android {\n' +
+                '    compileSdkVersion 26\n' +
+                '\n' +
+                '    defaultConfig {\n' +
+                '        minSdkVersion 19\n' +
+                '        targetSdkVersion 26\n' +
+                '        versionCode 1\n' +
+                '        versionName "1.0"\n' +
+                '    }\n' +
+                '}\n' +
+                '\n' +
+                'dependencies {\n' +
+                '    implementation fileTree(dir: "libs", include: ["*.jar"])\n' +
+                '}\n' +
+                '\n' +
+                'def moduleSourceSets = new ArrayList<String>()\n' +
+                'project.parent.subprojects.each {\n' +
+                '    def publicFile = it.file("src" + File.separator + "public")\n' +
+                '    if (publicFile.exists()) {\n' +
+                '        def modulePath = it.path.replaceAll(":", "/").substring(1)\n' +
+                '        System.out.println("\\033[40;33m" + "found module path:${modulePath}" + "\\033[0m")\n' +
+                '        moduleSourceSets.add("${modulePath}/src/public")\n' +
+                '    }\n' +
+                '}\n' +
+                '\n' +
+                'def projectString = ""\n' +
+                'def dir = project.projectDir\n' +
+                'while (dir != project.rootDir) {\n' +
+                '    projectString += "../"\n' +
+                '    dir = dir.parentFile\n' +
+                '}\n' +
+                'moduleSourceSets.each {\n' +
+                '    System.out.println("\\033[40;33m" + "add source path for project public ${projectString}${it}/java" + "\\033[0m")\n' +
+                '    project.extensions.android.sourceSets.main.java.srcDirs += "${projectString}${it}/java"\n' +
+                '    project.extensions.android.sourceSets.main.res.srcDirs += "${projectString}${it}/res"\n' +
+                '}'
+        )
+    }
+    def routerDir = new File(javaDir, "me/andrew/moduleinjector")
+    if (!routerDir.exists() && !routerDir.mkdirs()) {
+        System.out.println("router dir make error")
+        return
+    }
+    def routerFile = new File(routerDir, "ModuleInjector.java")
+    if (!routerFile.exists()) {
+        routerFile.write('package me.andrew.moduleinjector;\n' +
+                '\n' +
+                'import android.text.TextUtils;\n' +
+                '\n' +
+                'import java.util.HashMap;\n' +
+                'import java.util.Map;\n' +
+                '\n' +
+                'public class ModuleInjector {\n' +
+                '\n' +
+                '    private static final String DEFAULT = "DEFAULT";\n' +
+                '\n' +
+                '    private static class HOLDER {\n' +
+                '        private static ModuleInjector INSTANCE = new ModuleInjector();\n' +
+                '    }\n' +
+                '\n' +
+                '    private volatile Map<Class, Entry> map = new HashMap<>();\n' +
+                '\n' +
+                '    public static <T> void install(Class<T> clazz, T value) {\n' +
+                '        install(clazz, DEFAULT, value);\n' +
+                '    }\n' +
+                '\n' +
+                '    public static <T> void install(Class<T> clazz, String key, T value) {\n' +
+                '        if (clazz == null || TextUtils.isEmpty(key) || value == null) {\n' +
+                '            throw new IllegalArgumentException("args should not be null");\n' +
+                '        }\n' +
+                '        ModuleInjector router = HOLDER.INSTANCE;\n' +
+                '        synchronized (router) {\n' +
+                '            Entry et = router.map.get(clazz);\n' +
+                '            if (et == null) {\n' +
+                '                et = new Entry<T>(key, value, null);\n' +
+                '                router.map.put(clazz, et);\n' +
+                '            } else {\n' +
+                '                for (; ; ) {\n' +
+                '                    if (key == et.key || key.equals(et.key)) {\n' +
+                '                        et.value = value;\n' +
+                '                        return;\n' +
+                '                    }\n' +
+                '                    if (et.next == null) {\n' +
+                '                        et.next = new Entry<T>(key, value, null);\n' +
+                '                        return;\n' +
+                '                    }\n' +
+                '                    et = et.next;\n' +
+                '                }\n' +
+                '            }\n' +
+                '        }\n' +
+                '    }\n' +
+                '\n' +
+                '    public static <T> T get(Class<T> clazz) {\n' +
+                '        return get(clazz, DEFAULT);\n' +
+                '    }\n' +
+                '\n' +
+                '    public static <T> T get(Class<T> clazz, String key) {\n' +
+                '        if (clazz == null || TextUtils.isEmpty(key)) {\n' +
+                '            throw new IllegalArgumentException("args should not be null");\n' +
+                '        }\n' +
+                '        ModuleInjector router = HOLDER.INSTANCE;\n' +
+                '        synchronized (router) {\n' +
+                '            Entry<T> et = router.map.get(clazz);\n' +
+                '            if (et == null) {\n' +
+                '                return null;\n' +
+                '            } else {\n' +
+                '                for (; ; ) {\n' +
+                '                    if (key == et.key || key.equals(et.key)) {\n' +
+                '                        return et.value;\n' +
+                '                    }\n' +
+                '                    if (et.next == null) {\n' +
+                '                        return null;\n' +
+                '                    }\n' +
+                '                    et = et.next;\n' +
+                '                }\n' +
+                '            }\n' +
+                '        }\n' +
+                '    }\n' +
+                '\n' +
+                '    public static <T> void unInstall(Class<T> clazz) {\n' +
+                '        if (clazz == null) {\n' +
+                '            throw new IllegalArgumentException("args should not be null");\n' +
+                '        }\n' +
+                '        ModuleInjector router = HOLDER.INSTANCE;\n' +
+                '        synchronized (router) {\n' +
+                '            router.map.remove(clazz);\n' +
+                '        }\n' +
+                '    }\n' +
+                '\n' +
+                '    public static <T> void unInstall(Class<T> clazz, String key) {\n' +
+                '        if (clazz == null || TextUtils.isEmpty(key)) {\n' +
+                '            throw new IllegalArgumentException("args should not be null");\n' +
+                '        }\n' +
+                '        ModuleInjector router = HOLDER.INSTANCE;\n' +
+                '        synchronized (router) {\n' +
+                '            Entry<T> et = router.map.get(clazz);\n' +
+                '            if (et == null) {\n' +
+                '                return;\n' +
+                '            } else {\n' +
+                '                if (key == et.key || key.equals(et.key)) {\n' +
+                '                    router.map.put(clazz, et.next);\n' +
+                '                    return;\n' +
+                '                }\n' +
+                '                Entry<T> pre = null;\n' +
+                '                for (; ; ) {\n' +
+                '                    if (key == et.key || key.equals(et.key)) {\n' +
+                '                        if (pre == null) {\n' +
+                '                            router.map.put(clazz, et.next);\n' +
+                '                        } else {\n' +
+                '                            pre.next = et.next;\n' +
+                '                        }\n' +
+                '                        return;\n' +
+                '                    }\n' +
+                '                    if (et.next == null) {\n' +
+                '                        return;\n' +
+                '                    }\n' +
+                '                    pre = et;\n' +
+                '                    et = et.next;\n' +
+                '                }\n' +
+                '            }\n' +
+                '        }\n' +
+                '    }\n' +
+                '\n' +
+                '    private static class Entry<T> {\n' +
+                '        private String key;\n' +
+                '        private T value;\n' +
+                '        private Entry<T> next;\n' +
+                '\n' +
+                '        public Entry(String key, T value, Entry<T> next) {\n' +
+                '            this.key = key;\n' +
+                '            this.value = value;\n' +
+                '            this.next = next;\n' +
+                '        }\n' +
+                '    }\n' +
+                '}\n')
+    }
+
+    include ':public'
+    project(':public').projectDir = publicDir
+}

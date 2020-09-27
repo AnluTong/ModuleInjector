@@ -1,0 +1,17 @@
+def includeSets = new ArrayList<String>()
+project.getAllTasks(true).keySet().each {
+    def publicFile = it.file("src" + File.separator + "public")
+    if (publicFile.exists()) {
+        includeSets.add(it.name)
+    }
+}
+
+project.getAllTasks(true).keySet().each { sub ->
+    sub.afterEvaluate {
+        if (sub.getPlugins().hasPlugin("com.android.application")
+                || includeSets.contains(sub.name)) {
+            sub.dependencies.add('implementation', project('public'))
+            System.out.println("\033[40;33m" + "${sub.name} add public deps" + "\033[0m")
+        }
+    }
+}
