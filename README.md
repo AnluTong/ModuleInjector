@@ -30,7 +30,7 @@ apply from: 'publish/ProjetSetup.gradle'
 
 ## 发布能力
 
-子模块（甚至是主模块，比如你可以在主模块发布提供Context能力）在/src/public/java下发布自身接口类即可（当然也可以发布普通类）。其他模块想要使用别的模块公共能力也很简单，两种方式，自身发布能力（创建/src/public）或者依赖project(':public')
+子模块（甚至是主模块）在/src/public/java下发布自身接口类即可。其他模块想要使用别的模块公共能力也很简单，接入ModuleInjector即可。可以使用两种方式，创建/src/public文件夹或者依赖project(':public')
 
 接入ModuleInjector之后，你会惊奇的发现，自己模块能够使用其他模块发布的接口，IDE有补齐提示，就像其他模块接口在自己模块一样，enjoy it！
 
