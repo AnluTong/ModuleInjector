@@ -1,6 +1,9 @@
 # ModuleInjector
 解耦模块依赖，简单的模块能力发布，服务自动发现及依赖注入框架
 
+## 理想
+假定我们有A，B，C三个模块，三个模块各自输出自己的能力，三个模块又互相有一些依赖关系，如何在模块不互相依赖的情况下进行编码？
+
 ## 痛点
 多模块化的项目中，常常会遇到模块依赖的问题，对模块边界理解不深，或者处理不当很有可能造成项目循环依赖，公共模块膨胀等棘手问题。当然我们可以通过谨慎的抽象公共接口并划分子模块等方式解决该类问题，但使用起来，可能并不太便利，我们还需要依赖一些依赖注入的机制实现抽象接口的注入。
 
@@ -35,7 +38,7 @@ ModuleInjector.install(IAInterface.class, new LibAImpl())
 之后，你就能通过接口，获取实现了
 
 ```
-ModuleInjector.get(ICInterface.class).testA()
+ModuleInjector.get(IAInterface.class).testA()
 ```
 
 ## 解构
