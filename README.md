@@ -30,9 +30,7 @@ apply from: 'publish/ProjetSetup.gradle'
 
 ## 发布能力
 
-子模块（甚至是主模块）在/src/public/java下发布自身接口类即可。其他模块想要使用别的模块公共能力也很简单，接入ModuleInjector即可。可以使用两种方式，创建/src/public文件夹或者依赖project(':public')
-
-接入ModuleInjector之后，你会惊奇的发现，自己模块能够使用其他模块发布的接口，IDE有补齐提示，就像其他模块接口在自己模块一样，enjoy it！
+子模块（甚至是主模块）在/src/public/java下发布自身接口类即可。其他模块想要使用别的模块公共能力也很简单，接入ModuleInjector即可。接入ModuleInjector之后，你会惊奇的发现，自己模块能够使用其他模块发布的接口，IDE有补齐提示，就像其他模块接口在自己模块一样，enjoy it！
 
 ## 依赖注入
 上面我们实现了各模块间服务能力的自主发现及更加解耦的能力发布，接口能力的使用还依赖于依赖注入。我们实现了一个简单的依赖注入框架，需要你在使用前进行一个注入。我们将注入与模块能力发布进行了耦合（框架常干的事），只要接入ModuleInjector（创建/src/public），你就能使用依赖注入。
